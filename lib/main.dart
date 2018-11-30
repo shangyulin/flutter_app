@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-
 import 'package:english_words/english_words.dart';
+import 'package:flutter_app/low.dart';
+import 'dart:async';
+import 'package:flutter/services.dart';
 
 void main() => runApp(MyApp());
 
@@ -15,6 +17,10 @@ class MyApp extends StatelessWidget {
         theme: ThemeData(
           primarySwatch: Colors.blue,
         ),
+        // 注册路由表
+        routes: {
+          "new_pages":(context)=>NewRouter(),
+        },
         home: new RandomWord());
   }
 }
@@ -28,7 +34,10 @@ class RandomWord extends StatefulWidget {
 }
 
 class RandomWordState extends State<RandomWord> {
+  // 存储单词的数组
   final _suggests = <WordPair>[];
+
+  // 记录是否标记过
   final _saved = Set<WordPair>();
   final _biggerFont = const TextStyle(fontSize: 18.0);
 
@@ -38,8 +47,13 @@ class RandomWordState extends State<RandomWord> {
     return new Scaffold(
       appBar: new AppBar(
         title: new Text("Welcome to flutter"),
+        // 标题栏添加按钮
+        actions: <Widget>[
+          new IconButton(icon: new Icon(Icons.list), onPressed: _pushSaved)
+        ],
         centerTitle: true,
       ),
+      // 正文
       body: _buildSuggestions(),
     );
   }
@@ -69,19 +83,61 @@ class RandomWordState extends State<RandomWord> {
         alreadySaved ? Icons.favorite : Icons.favorite_border,
         color: alreadySaved ? Colors.red : null,
       ),
-      onTap: (){
+      // 处理点击事件
+      onTap: () {
         // setState()会触发State对象的build方法，以此来刷新UI
         setState(() {
-          if(alreadySaved){
+          if (alreadySaved) {
             _saved.remove(pair);
-          }else{
+          } else {
             _saved.add(pair);
           }
         });
       },
     );
   }
+
+  void _pushSaved() {
+    Navigator.of(context).push(new MaterialPageRoute(builder: (context) {
+      final tiles = _saved.map((pair) {
+        return new ListTile(
+          title: new Text(
+            pair.asPascalCase,
+            style: _biggerFont,
+          ),
+        );
+      });
+      final divided =
+      ListTile.divideTiles(tiles: tiles, context: context).toList();
+      return new Scaffold(
+        appBar: new AppBar(
+          title: new Text("Saved Suggestions"),
+          centerTitle: true,
+          // 标题栏添加按钮
+          actions: <Widget>[
+            new IconButton(
+                icon: new Icon(Icons.list),
+                // 按钮添加点击事件
+                onPressed: () {
+                  Navigator.of(context)
+                      .push(new MaterialPageRoute(builder: (context) {
+                        // 跳转到新页面
+                    return new NewRouter(content : "nihao");
+                  }));
+                })
+          ],
+        ),
+        body: new ListView(children: divided),
+      );
+    }));
+  }
+
+  Future<String> loadAssets() async{
+    return await rootBundle.loadString("assets/config.json");
+  }
 }
+
+
 
 //class MyHomePage extends StatefulWidget {
 //  MyHomePage({Key key, this.title}) : super(key: key);
